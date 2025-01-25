@@ -23,6 +23,7 @@ def get_spot_rates_on_tenors(yieldcurve, day_count):
 
 def get_monthly_spot_rates(yieldcurve, day_count,
                    calendar=ql.UnitedStates(ql.UnitedStates.GovernmentBond), months=361):
+    """Generate monthly spot rates for given yield curve."""
     spots = []
     tenors = []
     ref_date = yieldcurve.referenceDate()
@@ -45,6 +46,7 @@ def get_monthly_spot_rates(yieldcurve, day_count,
 
 def get_daily_spot_rates(yieldcurve, day_count,
                    calendar=ql.UnitedStates(ql.UnitedStates.GovernmentBond), days=361*30):
+    """Generate daily spot rates for given yield curve."""
     spots = []
     tenors = []
     ref_date = yieldcurve.referenceDate()
