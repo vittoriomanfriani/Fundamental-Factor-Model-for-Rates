@@ -53,7 +53,7 @@ def fit_nelson_siegel(maturities, yields, ridge=False, alpha=0.1, initial_params
         (-np.inf, np.inf),  # No bounds for beta0
         (-np.inf, np.inf),  # No bounds for beta1
         (-np.inf, np.inf),  # No bounds for beta2
-        (0.1, 0.6)       # Bounds for lambda
+        (0.5, 3)       # Bounds for lambda
     ]
 
     if ridge:

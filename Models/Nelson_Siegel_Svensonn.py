@@ -49,7 +49,7 @@ def fit_nelson_siegel_svensson(maturities, yields, ridge=False, alpha=0.1, initi
     """
     if initial_params is None:
         initial_params = [3, 0, 0, 0, 0.5, 0.5]
-    lambda_bounds = (0.1, 0.6)
+    lambda_bounds = (0.5, 3)
     bounds = [
         (-np.inf, np.inf),  # No bounds for beta0
         (-np.inf, np.inf),  # No bounds for beta1

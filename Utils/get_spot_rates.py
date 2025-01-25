@@ -18,7 +18,7 @@ def get_spot_rates_on_tenors(yieldcurve, day_count):
         tenors.append(yrs)
         spots.append(100 * eq_rate)
 
-    return pd.DataFrame(list(zip(tenors, spots)), columns=["Maturities", "Curve"], index=[''] * len(tenors))
+    return pd.DataFrame(list(zip(tenors, spots)), columns=["Maturities", "Curve"], index=[''] * len(tenors))[1:]
 
 
 def get_monthly_spot_rates(yieldcurve, day_count,
@@ -41,7 +41,7 @@ def get_monthly_spot_rates(yieldcurve, day_count,
 
     return pd.DataFrame(list(zip(tenors, spots)),
                         columns=["Maturities", "Curve"],
-                        index=[''] * len(tenors))
+                        index=[''] * len(tenors))[1:]
 
 def get_daily_spot_rates(yieldcurve, day_count,
                    calendar=ql.UnitedStates(ql.UnitedStates.GovernmentBond), days=361*30):
@@ -63,4 +63,4 @@ def get_daily_spot_rates(yieldcurve, day_count,
 
     return pd.DataFrame(list(zip(tenors, spots)),
                         columns=["Maturities", "Curve"],
-                        index=[''] * len(tenors))
+                        index=[''] * len(tenors))[1:]
