@@ -146,7 +146,7 @@ def compute_rolldown(df):
 
             # price at t-1
             try:
-                # Safely attempt to get price_t1
+                #attempt to get price at t - 2
                 price_t1 = df.loc[date, bond_id]['price']
 
                 # Price at t
