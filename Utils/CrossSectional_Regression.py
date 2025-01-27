@@ -63,10 +63,10 @@ def cross_sectional_regression_nelson_siegel(df, loadings_df, nss = False):
             continue
 
         if nss == True:
-            lambda1 = params.loc[date]['Lambda1']
-            lambda2 = params.loc[date, 'Lambda2']
+            lambda1 = params.loc['Lambda1']
+            lambda2 = params.loc['Lambda2']
         else:
-            lambda1 = params.loc[date, 'Lambda']
+            lambda1 = params.loc['Lambda']
 
         t = ex['time to maturity']
 
@@ -77,12 +77,12 @@ def cross_sectional_regression_nelson_siegel(df, loadings_df, nss = False):
             ex['f3'] = (1 - np.exp(-t / lambda2)) / (t / lambda2) - np.exp(-t / lambda2)
 
         # Filter rows with non-finite values
-        ex = ex[np.isfinite(ex[['Excess Returns', 'f1', 'f2']]).all(axis=1)]
+        ex = ex[np.isfinite(ex[['returns', 'f1', 'f2']]).all(axis=1)]
 
         if len(ex) == 0:  # Ensure data is still available after filtering
             continue
 
-        y = ex['Excess Returns']
+        y = ex['returns']
 
         if nss == True:
             X = sm.add_constant(ex[['f1', 'f2', 'f3']])
