@@ -3,7 +3,7 @@ import statsmodels.api as sm
 import numpy as np
 import pandas as pd
 
-def cross_sectional_regression_nelson_siegel(df, loadings_df):
+def cross_sectional_regression_nelson_siegel(df, loadings_df, nss = False):
     """
         Performs cross-sectional regression of the Nelson-Siegel model on bond excess returns
         to estimate factor loadings and their impact on returns for each date in the dataset.
@@ -19,6 +19,8 @@ def cross_sectional_regression_nelson_siegel(df, loadings_df):
         loadings_df : pandas.DataFrame
             A DataFrame containing the Nelson-Siegel lambda parameter for each date,
             indexed by the same date values as `df`.
+        nss : bool
+            Set to True if you pass Nelson Siegel Svensson Parmas
 
         Returns:
         -------
@@ -28,6 +30,7 @@ def cross_sectional_regression_nelson_siegel(df, loadings_df):
             - 'const': The constant term from the regression.
             - 'beta1': The estimated loading on the first Nelson-Siegel factor.
             - 'beta2': The estimated loading on the second Nelson-Siegel factor.
+            - 'beta3': The estimated loading on the third Nelson-Siegel-Svensson factor.
             - 'r_squared': The R-squared of the regression.
 
         Methodology:
@@ -59,13 +62,19 @@ def cross_sectional_regression_nelson_siegel(df, loadings_df):
         if len(ex) == 0:  # Skip if no data is available for this date
             continue
 
-        lambda_ = loadings_df.loc[date, 'Lambda']
+        if nss == True:
+            lambda1 = params.loc[date]['Lambda1']
+            lambda2 = params.loc[date, 'Lambda2']
+        else:
+            lambda1 = params.loc[date, 'Lambda']
 
         t = ex['time to maturity']
 
         # Compute Nelson-Siegel factor loadings
-        ex['f1'] = (1 - np.exp(-t / lambda_)) / (t / lambda_)
-        ex['f2'] = (1 - np.exp(-t / lambda_)) / (t / lambda_) - np.exp(-t / lambda_)
+        ex['f1'] = (1 - np.exp(-t / lambda1)) / (t / lambda1)
+        ex['f2'] = (1 - np.exp(-t / lambda1)) / (t / lambda1) - np.exp(-t / lambda1)
+        if nss == True:
+            ex['f3'] = (1 - np.exp(-t / lambda2)) / (t / lambda2) - np.exp(-t / lambda2)
 
         # Filter rows with non-finite values
         ex = ex[np.isfinite(ex[['Excess Returns', 'f1', 'f2']]).all(axis=1)]
@@ -74,7 +83,11 @@ def cross_sectional_regression_nelson_siegel(df, loadings_df):
             continue
 
         y = ex['Excess Returns']
-        X = sm.add_constant(ex[['f1', 'f2']])
+
+        if nss == True:
+            X = sm.add_constant(ex[['f1', 'f2', 'f3']])
+        else:
+            X = sm.add_constant(ex[['f1', 'f2']])
 
         if X.empty or y.empty:  # Ensure X and y are non-empty
             continue
@@ -82,15 +95,24 @@ def cross_sectional_regression_nelson_siegel(df, loadings_df):
         try:
             # Fit the regression model
             model = sm.OLS(y, X).fit()
-
             # Store results
-            results.append({
-                'date': date,
-                'const': model.params.get('const', np.nan),
-                'beta1': model.params.get('f1', np.nan),
-                'beta2': model.params.get('f2', np.nan),
-                'r_squared': model.rsquared
-            })
+            if nss == True:
+                results.append({
+                    'date': date,
+                    'const': model.params.get('const', np.nan),
+                    'beta1': model.params.get('f1', np.nan),
+                    'beta2': model.params.get('f2', np.nan),
+                    'beta3': model.params.get('f3', np.nan),
+                    'r_squared': model.rsquared
+                })
+            else:
+                results.append({
+                    'date': date,
+                    'const': model.params.get('const', np.nan),
+                    'beta1': model.params.get('f1', np.nan),
+                    'beta2': model.params.get('f2', np.nan),
+                    'r_squared': model.rsquared
+                })
         except Exception as e:
             # Handle any unexpected errors during regression
             print(f"Error processing date {date}: {e}")
