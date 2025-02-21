@@ -23,14 +23,6 @@ This repository provides a comprehensive framework for constructing and analyzin
 - **`data_processing.py`**: Prepares data for yield curve fitting and backtesting.
 - **`get_spot_rates.py`**: Extracts spot rates from yield data.
 
-### **5. Jupyter Notebooks**
-- **`project.ipynb`**: Demonstrates the entire workflow:
-  - Spot curve fitting using market data.
-  - Nelson-Siegel fitting and parameter interpretation.
-  - Roll-down and carry decomposition.
-  - Explanation of excess returns using the yield curve factors.
-
-
 ---
 
 ## **Theoretical Background**
