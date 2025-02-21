@@ -5,7 +5,7 @@ from tqdm import tqdm
 import numpy as np
 from Utils.data_processing import get_most_liquid_bond_by_interval
 
-def price_bond(spot_curve_handle, coupon, issue_date, maturity_date):
+def price_bond(spot_curve_handle, coupon, issue_date, maturity_date, current_date):
     """
     Computes the clean price of a fixed-rate bond using a given spot yield curve.
 
@@ -46,6 +46,8 @@ def price_bond(spot_curve_handle, coupon, issue_date, maturity_date):
     """
     # Bond params
     calendar = ql.UnitedStates(m=ql.UnitedStates.GovernmentBond)
+    current_date = calendar.adjust(pydatetime_to_quantlib_date(current_date))
+    ql.Settings.instance().evaluationDate = current_date
     day_count = ql.ActualActual(ql.ActualActual.ISDA)
     issue_date = pydatetime_to_quantlib_date(issue_date)
     maturity_date = pydatetime_to_quantlib_date(maturity_date)
@@ -122,13 +124,13 @@ def compute_rolldown(df):
     df.loc[:, 'rolldown'] = np.nan
     spot_rates_calculator = scc.SpotRatesCalculator()
 
-    for i, date in enumerate(tqdm(df.index.get_level_values(0).unique())):
+    for i, past_date in enumerate(tqdm(df.index.get_level_values(0).unique())):
 
-        curve_set_df = df.loc[date]
-        otr = get_most_liquid_bond_by_interval(curve_set_df) # Curve at t-1
+        curve_set_df = df.loc[past_date]
+        otr = get_most_liquid_bond_by_interval(curve_set_df)
 
         # Spot Curve
-        yc = spot_rates_calculator.curve_bootstrapper(otr, date, rolldown=True)
+        yc = spot_rates_calculator.curve_bootstrapper(otr, past_date, rolldown=True)
         spot_curve_handle = ql.YieldTermStructureHandle(yc)
 
         # Move froward by one day to compute roll-down if term structure is constant
@@ -146,16 +148,15 @@ def compute_rolldown(df):
 
             # price at t-1
             try:
-                #attempt to get price at t - 2
-                price_t1 = df.loc[date, bond_id]['price']
-
+                #attempt to get price at t - 1
+                price_t1 = price_bond(spot_curve_handle, coupon, issue_date, maturity_date, past_date)
                 # Price at t
-                price_t = price_bond(spot_curve_handle, coupon, issue_date, maturity_date)
+                price_t = price_bond(spot_curve_handle, coupon, issue_date, maturity_date, current_date)
 
                 # Compute roll-down
                 roll_down = price_t / price_t1 - 1
 
-            except (KeyError, IndexError, ValueError) as e:
+            except (KeyError, IndexError, ValueError, ZeroDivisionError) as e:
                 # Handle errors from .loc or other computations
                 roll_down = np.nan
 

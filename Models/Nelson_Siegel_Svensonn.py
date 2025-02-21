@@ -48,7 +48,7 @@ def fit_nelson_siegel_svensson(maturities, yields, ridge=False, alpha=0.1, initi
     - Optimized parameters as a numpy array.
     """
     if initial_params is None:
-        initial_params = [3, 0, 0, 0, 0.5, 0.5]
+        initial_params = [3, 0, 0, 0, 1, 1]
     lambda_bounds = (0.5, 3)
     bounds = [
         (-np.inf, np.inf),  # No bounds for beta0

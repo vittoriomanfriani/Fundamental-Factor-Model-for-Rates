@@ -56,6 +56,7 @@ def cross_sectional_regression_nelson_siegel(df, loadings_df, nss = False):
           from the regression for that date.
     """
     results = []
+    count = 0
     for date in tqdm(df.index.get_level_values(0).unique()):
         ex = df.loc[date].dropna()
         params = loadings_df.loc[date]
@@ -71,18 +72,20 @@ def cross_sectional_regression_nelson_siegel(df, loadings_df, nss = False):
         t = ex['time to maturity']
 
         # Compute Nelson-Siegel factor loadings
-        ex['f1'] = (1 - np.exp(-t / lambda1)) / (t / lambda1)
+        ex['f1'] = (1 - np.exp(-t/lambda1))/(t/lambda1)
         ex['f2'] = (1 - np.exp(-t / lambda1)) / (t / lambda1) - np.exp(-t / lambda1)
         if nss == True:
             ex['f3'] = (1 - np.exp(-t / lambda2)) / (t / lambda2) - np.exp(-t / lambda2)
 
-        # Filter rows with non-finite values
-        ex = ex[np.isfinite(ex[['returns', 'f1', 'f2']]).all(axis=1)]
-
         if len(ex) == 0:  # Ensure data is still available after filtering
             continue
 
-        y = ex['returns']
+        y = ex['Excess Returns']
+        correlations = ex[['f1', 'f2']].corr()
+        if correlations.iloc[1, 0] > 0.4:
+            count += 1
+            print(f'multicollinearity problem at date: {date} - correlation = {correlations.iloc[1, 0]} - count = {count}')
+
 
         if nss == True:
             X = sm.add_constant(ex[['f1', 'f2', 'f3']])
@@ -120,5 +123,6 @@ def cross_sectional_regression_nelson_siegel(df, loadings_df, nss = False):
 
     # Convert results into a DataFrame
     results_df = pd.DataFrame(results)
+    results_df.set_index('date', inplace=True)
 
     return results_df
