@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 def process_data(df):
     df = df[['coupon', 'maturity', 'yield', 'price','time to maturity', 'issue_date']]
@@ -20,7 +21,7 @@ def filter_on_the_run_bonds(df):
     return on_the_run_bonds.set_index(["timestamp", "id"])
 
 def get_most_liquid_bond_by_interval(df, max_years=30):
-    """gets the most liquid bond for each year of time to maturity"""
+    """very simplistic method to get the most liquid bond for each part of the curve"""
 
     df = df.loc[df["time to maturity"] > 0.02].copy() # Discard smallest maturities
     filtered_bonds = []  # List to store the selected bonds
@@ -28,9 +29,9 @@ def get_most_liquid_bond_by_interval(df, max_years=30):
     filtered_bonds.append(first_bond) # Add bond with smallest maturity - will be useful for interpolation
 
     # Iterate over each yearly interval
-    for year in range(max_years):
+    for year in np.arange(0, max_years, 0.2):
         lower_bound = year
-        upper_bound = year + 1
+        upper_bound = year + 0.2
 
         # Filter bonds in the current time-to-maturity interval
         interval_bonds = df[(df['time to maturity'] > lower_bound) & (df['time to maturity'] <= upper_bound)]

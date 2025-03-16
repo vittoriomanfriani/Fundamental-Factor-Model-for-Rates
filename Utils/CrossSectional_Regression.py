@@ -81,11 +81,6 @@ def cross_sectional_regression_nelson_siegel(df, loadings_df, nss = False):
             continue
 
         y = ex['Excess Returns']
-        correlations = ex[['f1', 'f2']].corr()
-        if correlations.iloc[1, 0] > 0.4:
-            count += 1
-            print(f'multicollinearity problem at date: {date} - correlation = {correlations.iloc[1, 0]} - count = {count}')
-
 
         if nss == True:
             X = sm.add_constant(ex[['f1', 'f2', 'f3']])
