@@ -109,8 +109,10 @@ class SpotRatesCalculator:
             )
             bond_helpers.append(helper)
 
-        yc = ql.PiecewiseLogCubicDiscount(current_date, bond_helpers, day_count)
-        yc.enableExtrapolation()
+        yc = ql.PiecewiseLogLinearDiscount(current_date, bond_helpers, day_count)
+
+        if rolldown == True:
+            return yc
 
         if freq == 'monthly':
             splcd = get_monthly_spot_rates(yc, day_count)
@@ -118,9 +120,6 @@ class SpotRatesCalculator:
             splcd = get_spot_rates_on_tenors(yc, day_count)
         elif freq == 'daily':
             splcd = get_daily_spot_rates
-
-        if rolldown == True:
-            return yc
 
         return splcd
 
@@ -158,7 +157,7 @@ class SpotRatesCalculator:
             most_liquid = get_most_liquid_bond_by_interval(curve_set_df)
             zero_rate_curve = self.curve_bootstrapper(most_liquid, date, freq)
             zero_rate_curve["Date"] = date
-            results_list.append(zero_rate_curve)
+            results_list.append(zero_rate_curve[1:])
 
         final_df = pd.concat(results_list)
         final_df.set_index(["Date"], inplace=True)

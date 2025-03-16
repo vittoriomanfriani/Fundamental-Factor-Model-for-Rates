@@ -120,47 +120,73 @@ def compute_rolldown(df):
       spot yield curve, and `price_bond` is used to compute bond prices from the curve.
     - The function assumes that the DataFrame is sorted by date in the index.
     """
-    # Create an empty series to store roll-down results
+    # Create a 'rolldown' column initialized with NaN
     df.loc[:, 'rolldown'] = np.nan
+
+    # Instantiate your SpotRatesCalculator (custom class)
     spot_rates_calculator = scc.SpotRatesCalculator()
 
-    for i, past_date in enumerate(tqdm(df.index.get_level_values(0).unique())):
+    # Unique dates in ascending order
+    unique_dates = df.index.get_level_values(0).unique()
 
+    for i, past_date in enumerate(tqdm(unique_dates, desc="Computing RollDown")):
+        # 1) Get bond data for the 'past_date'
         curve_set_df = df.loc[past_date]
+
+        # 2) Pick your "most liquid" subset or single bond for bootstrapping
         otr = get_most_liquid_bond_by_interval(curve_set_df)
 
-        # Spot Curve
+        # 3) Bootstrap a yield curve (with rolldown=True so it returns the raw curve)
         yc = spot_rates_calculator.curve_bootstrapper(otr, past_date, rolldown=True)
+
+        # 4) Enable extrapolation so we don't get "past max curve time" errors
+        yc.enableExtrapolation()
+
+        # 5) Create a YieldTermStructureHandle from the curve
         spot_curve_handle = ql.YieldTermStructureHandle(yc)
 
-        # Move froward by one day to compute roll-down if term structure is constant
-        if i + 1 < len(df.index.get_level_values(0).unique()):
-            current_date = df.index.get_level_values(0).unique()[i + 1]
-
+        # 6) Identify the "current_date" (the next date in the DataFrame)
+        if i + 1 < len(unique_dates):
+            current_date = unique_dates[i + 1]
         else:
+            # No next date, so we can't compute a roll-down
             break
 
-        for id in df.loc[current_date].index:
-            bond_id = id
-            coupon = df.loc[current_date, id]['coupon']
-            issue_date = df.loc[current_date, id]['issue_date']
-            maturity_date = df.loc[current_date, id]['maturity_date']
-
-            # price at t-1
+        # 7) For each bond at 'current_date', compute roll-down
+        for bond_id in df.loc[current_date].index:
             try:
-                #attempt to get price at t - 1
-                price_t1 = price_bond(spot_curve_handle, coupon, issue_date, maturity_date, past_date)
-                # Price at t
-                price_t = price_bond(spot_curve_handle, coupon, issue_date, maturity_date, current_date)
+                # Retrieve bond info
+                coupon = df.loc[(current_date, bond_id), 'coupon']
+                issue_date = df.loc[(current_date, bond_id), 'issue_date']
+                maturity_date = df.loc[(current_date, bond_id), 'maturity_date']
+
+                # Price at t-1 (using the past_date curve)
+                price_t1 = price_bond(
+                    spot_curve_handle,
+                    coupon,
+                    issue_date,
+                    maturity_date,
+                    past_date
+                )
+
+                # Price at t (using the same curve, but with current_date as evaluation)
+                price_t = price_bond(
+                    spot_curve_handle,
+                    coupon,
+                    issue_date,
+                    maturity_date,
+                    current_date
+                )
 
                 # Compute roll-down
-                roll_down = price_t / price_t1 - 1
+                roll_down = (price_t / price_t1) - 1
 
-            except (KeyError, IndexError, ValueError, ZeroDivisionError) as e:
-                # Handle errors from .loc or other computations
+            except (KeyError, IndexError, ValueError, ZeroDivisionError, RuntimeError) as e:
+                # If something goes wrong (e.g., missing data or still beyond max curve),
+                # store NaN so you can inspect later.
                 roll_down = np.nan
 
-            # Store the result in the roll_down_series
+            # 8) Store result
             df.at[(current_date, bond_id), 'rolldown'] = roll_down
 
     return df
