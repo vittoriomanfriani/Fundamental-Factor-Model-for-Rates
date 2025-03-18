@@ -58,8 +58,6 @@ class SpotRatesCalculator:
                     - 'tenors': Spot rates are calculated at the specific bond tenors.
                     - 'daily': Spot rates are calculated daily.
                 Default is 'monthly'.
-            rolldown (bool, optional):
-                use only to compute rolldown
 
         Returns:
             pd.DataFrame:
@@ -109,9 +107,10 @@ class SpotRatesCalculator:
             )
             bond_helpers.append(helper)
 
-        yc = ql.PiecewiseLogLinearDiscount(current_date, bond_helpers, day_count)
+        yc = ql.PiecewiseLogCubicDiscount(current_date, bond_helpers, day_count)
+        yc.enableExtrapolation()
 
-        if rolldown == True:
+        if rolldown:
             return yc
 
         if freq == 'monthly':
@@ -384,6 +383,5 @@ class SpotRatesCalculator:
         fitted_results_df.set_index("Date", inplace=True)
 
         return fitted_results_df
-
 
 
