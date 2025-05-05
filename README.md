@@ -1,4 +1,4 @@
-# Backtesting Series - Episode 3
+# Fundamental Factor Model for Rates
 
 This repository provides a comprehensive framework for constructing and analyzing yield curves using the **Nelson-Siegel** and **Nelson-Siegel-Svensson** models. It also provides tools to assess bond excess returns after removing the effects of carry and roll-down.
 
